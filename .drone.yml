@@ -2,9 +2,6 @@ kind: pipeline
 type: docker
 name: PR pipeline
 
-image_pull_secrets:
-- dockerconfigjson
-
 volumes:
 - name: dockersock
   temp: {}
@@ -46,9 +43,6 @@ trigger:
 kind: pipeline
 type: docker
 name: CI pipeline
-
-image_pull_secrets:
-- dockerconfigjson
 
 steps:
 - name: publish
