@@ -1,0 +1,84 @@
+kind: pipeline
+type: docker
+name: PR pipeline
+
+image_pull_secrets:
+- dockerconfigjson
+
+volumes:
+- name: dockersock
+  temp: {}
+
+services:
+- name: docker
+  image: docker:dind
+  privileged: true
+  volumes:
+  - name: dockersock
+    path: /var/run
+
+steps:
+- name: lint
+  image: hub.docker.local/drone-commitlint:latest
+
+- name: build
+  image: docker:dind
+  volumes:
+  - name: dockersock
+    path: /var/run
+  commands:
+  - sleep 5 # give docker enough time to start
+  - docker build -t drone-commitlint:${DRONE_COMMIT_BRANCH}-${DRONE_COMMIT_SHA:0:8} .
+
+- name: test
+  image: docker:dind
+  volumes:
+  - name: dockersock
+    path: /var/run
+  commands:
+    - "docker run -e DRONE_COMMIT_MESSAGE=\"chore: bugs\" drone-commitlint:${DRONE_COMMIT_BRANCH}-${DRONE_COMMIT_SHA:0:8}"
+
+trigger:
+  event:
+    - pull_request
+
+---
+kind: pipeline
+type: docker
+name: CI pipeline
+
+image_pull_secrets:
+- dockerconfigjson
+
+steps:
+- name: publish
+  image: plugins/docker
+  settings:
+    registry: hub.docker.local
+    insecure: true
+    username:
+      from_secret: nexus_user
+    password:
+      from_secret: nexus_password
+    repo: hub.docker.local/drone-commitlint
+    dockerfile: dockerfile
+    tags: ${DRONE_COMMIT_BRANCH}-${DRONE_COMMIT_SHA:0:8}
+    purge: true
+
+- name: test
+  image: hub.docker.local/drone-commitlint:${DRONE_COMMIT_BRANCH}-${DRONE_COMMIT_SHA:0:8}
+  environment:
+    DRONE_COMMIT_MESSAGE: "chore: bugs"
+
+- name: release
+  image: alpine
+  commands:
+  - echo release
+  when:
+    branch: master
+
+trigger:
+  branch: 
+  - rc
+  - master
+  event: push
