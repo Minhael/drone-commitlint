@@ -2,11 +2,8 @@ FROM node:15.1.0-alpine3.12
 
 WORKDIR /opt
 
-# Install commitlint
-RUN npm install --global @commitlint/cli
-
-# Install default rule set
-RUN npm install --global @commitlint/config-conventional
+# Install commitlint & default rule set
+RUN npm install --global @commitlint/cli @commitlint/config-conventional
 
 # Setup default configs
 RUN mkdir -p /usr/local/etc
@@ -21,6 +18,8 @@ RUN echo "module.exports = {extends: ['@commitlint/config-conventional']}" > $LI
 # Add entrypoint
 COPY docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
+
+WORKDIR /drone/src
 
 # Follow CI setup for CircleCI on https://commitlint.js.org/#/guides-ci-setup
 ENTRYPOINT [ "/opt/docker-entrypoint.sh" ]

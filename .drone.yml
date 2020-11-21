@@ -63,8 +63,6 @@ steps:
 
 - name: test
   image: hub.docker.local/drone-commitlint:${DRONE_COMMIT_BRANCH}-${DRONE_COMMIT_SHA:0:8}
-  environment:
-    DRONE_COMMIT_MESSAGE: "chore: bugs"
 
 trigger:
   branch: 

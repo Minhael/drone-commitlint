@@ -1,3 +1,5 @@
 #! /bin/sh
 
-echo $DRONE_COMMIT_MESSAGE | npx --no-install commitlint "$@"
+echo -e "author=$DRONE_COMMIT_AUTHOR"
+echo -n -e "$DRONE_COMMIT_MESSAGE"
+echo -n -e "$DRONE_COMMIT_MESSAGE" | commitlint "$@"
