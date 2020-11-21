@@ -16,7 +16,7 @@ services:
 
 steps:
 - name: lint
-  image: hub.docker.local/drone-commitlint:latest
+  image: hub.docker.local/drone-commitlint
 
 - name: build
   image: docker:dind
@@ -56,7 +56,9 @@ steps:
       from_secret: nexus_password
     repo: hub.docker.local/drone-commitlint
     dockerfile: dockerfile
-    tags: ${DRONE_COMMIT_BRANCH}-${DRONE_COMMIT_SHA:0:8}
+    tags:
+    - latest
+    - ${DRONE_COMMIT_BRANCH}-${DRONE_COMMIT_SHA:0:8}
     purge: true
 
 - name: test
@@ -64,15 +66,39 @@ steps:
   environment:
     DRONE_COMMIT_MESSAGE: "chore: bugs"
 
-- name: release
-  image: alpine
-  commands:
-  - echo release
-  when:
-    branch: master
-
 trigger:
   branch: 
-  - rc
   - master
-  event: push
+  event: 
+  - push
+
+---
+kind: pipeline
+type: docker
+name: CD pipeline
+
+steps:
+- name: versioning
+  image: hub.docker.local/drone-semantic-release
+  settings:
+    git_login:
+      from_secret: git_user
+    git_password:
+      from_secret: git_password
+
+- name: publish
+  image: plugins/docker
+  settings:
+    registry: hub.docker.local
+    insecure: true
+    username:
+      from_secret: nexus_user
+    password:
+      from_secret: nexus_password
+    repo: hub.docker.local/drone-commitlint
+    dockerfile: dockerfile
+    purge: true
+
+trigger:
+  event: 
+  - promote
